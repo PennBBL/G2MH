@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Data Repository Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f12;
+      --surface: #141720;
+      --border: #222840;
+      --accent: #00e5ff;
+      --accent2: #7b61ff;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --green: #00e676;
+      --yellow: #ffd740;
+      --red: #ff5252;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--accent);
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .logo h1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .header-meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    #last-fetch {
+      color: var(--accent);
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      margin-right: 0.4rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fadeUp 0.4s forwards;
+    }
+
+    .stat-card:nth-child(1) { animation-delay: 0.05s; }
+    .stat-card:nth-child(2) { animation-delay: 0.1s; }
+    .stat-card:nth-child(3) { animation-delay: 0.15s; }
+    .stat-card:nth-child(4) { animation-delay: 0.2s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    .stat-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .filter-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      padding: 0.3rem 0.7rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .search-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      padding: 0.3rem 0.75rem;
+      outline: none;
+      width: 200px;
+      transition: border-color 0.2s;
+    }
+
+    .search-box:focus {
+      border-color: var(--accent);
+    }
+
+    .search-box::placeholder { color: var(--muted); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+
+    thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      padding: 0.85rem 1.25rem;
+      text-align: left;
+      font-weight: 400;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(34,40,64,0.6);
+      transition: background 0.15s;
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(0,229,255,0.03); }
+
+    td {
+      padding: 1rem 1.25rem;
+      font-size: 0.875rem;
+      vertical-align: middle;
+    }
+
+    .td-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .td-path {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent2);
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .td-path a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .td-path a:hover { text-decoration: underline; }
+
+    .td-updated {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 2px;
+    }
+
+    .badge-new    { background: rgba(0,230,118,0.12); color: var(--green);  border: 1px solid rgba(0,230,118,0.3); }
+    .badge-update { background: rgba(0,229,255,0.1);  color: var(--accent); border: 1px solid rgba(0,229,255,0.25); }
+    .badge-stale  { background: rgba(255,215,64,0.1); color: var(--yellow); border: 1px solid rgba(255,215,64,0.25); }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-left: 0.5rem;
+    }
+
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .error-banner {
+      background: rgba(255,82,82,0.08);
+      border: 1px solid rgba(255,82,82,0.3);
+      color: var(--red);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8rem;
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">DB</div>
+    <h1>Data <span>Repository</span></h1>
+  </div>
+  <div class="header-meta">
+    <div><span class="status-dot"></span>Live</div>
+    <div>Last fetched: <span id="last-fetch">—</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="error-banner" id="error-banner">
+    ⚠ Could not load data.json — make sure the file exists in your repository root.
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Datasets</div>
+      <div class="stat-value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">New This Week</div>
+      <div class="stat-value" id="stat-new">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Updated Today</div>
+      <div class="stat-value" id="stat-today">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Repo Updated</div>
+      <div class="stat-value" id="stat-updated" style="font-size:1rem; padding-top:0.4rem;">—</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">// datasets</div>
+    <div class="filter-bar">
+      <input class="search-box" id="search" placeholder="Search datasets..." oninput="renderTable()"/>
+      <button class="filter-btn active" data-filter="all"    onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn"        data-filter="new"    onclick="setFilter('new',this)">New</button>
+      <button class="filter-btn"        data-filter="update" onclick="setFilter('update',this)">Updated</button>
+      <button class="filter-btn"        data-filter="stale"  onclick="setFilter('stale',this)">Stale</button>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Path on Server</th>
+        <th>Last Updated</th>
+        <th>Status</th>
+        <th>Format</th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <tr><td colspan="5" class="empty-state">Loading data...</td></tr>
+    </tbody>
+  </table>
+</main>
+
+<footer>
+  data-repository-dashboard &mdash; powered by GitHub Pages &mdash; data sourced from data.json
+</footer>
+
+<script>
+  let allDatasets = [];
+  let currentFilter = 'all';
+
+  // Determine badge based on last updated date
+  function getBadge(dateStr) {
+    const now = new Date();
+    const updated = new Date(dateStr);
+    const diffDays = (now - updated) / (1000 * 60 * 60 * 24);
+    if (diffDays < 1)  return { type: 'update', label: 'Updated' };
+    if (diffDays < 7)  return { type: 'new',    label: 'New'     };
+    if (diffDays > 30) return { type: 'stale',  label: 'Stale'   };
+    return { type: 'update', label: 'Active' };
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+  }
+
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable();
+  }
+
+  function copyPath(path) {
+    navigator.clipboard.writeText(path).catch(() => {});
+  }
+
+  function renderTable() {
+    const query = document.getElementById('search').value.toLowerCase();
+    const tbody = document.getElementById('table-body');
+    let datasets = allDatasets;
+
+    if (query) {
+      datasets = datasets.filter(d =>
+        d.name.toLowerCase().includes(query) ||
+        d.path.toLowerCase().includes(query) ||
+        (d.format || '').toLowerCase().includes(query)
+      );
+    }
+
+    if (currentFilter !== 'all') {
+      datasets = datasets.filter(d => getBadge(d.updated).type === currentFilter);
+    }
+
+    if (!datasets.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No datasets match your filter.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = datasets.map((d, i) => {
+      const badge = getBadge(d.updated);
+      return `
+        <tr style="animation-delay: ${i * 0.04}s">
+          <td class="td-name">${d.name}</td>
+          <td class="td-path">
+            ${d.box_link
+              ? `<a href="${d.box_link}" target="_blank" rel="noopener" title="Open in Box: ${d.path}">${d.path}</a>`
+              : `<span title="${d.path}">${d.path}</span>`
+            }
+            <button class="copy-btn" onclick="copyPath('${d.path}')">copy</button>
+          </td>
+          <td class="td-updated">${formatDate(d.updated)}</td>
+          <td><span class="badge badge-${badge.type}">${badge.label}</span></td>
+          <td><span class="badge badge-update">${d.format || '—'}</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function updateStats(data) {
+    const now = new Date();
+    const total = allDatasets.length;
+    const newCount = allDatasets.filter(d => {
+      const diff = (now - new Date(d.updated)) / (1000 * 60 * 60 * 24);
+      return diff < 7;
+    }).length;
+    const todayCount = allDatasets.filter(d => {
+      const diff = (now - new Date(d.updated)) / (1000 * 60 * 60 * 24);
+      return diff < 1;
+    }).length;
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-new').textContent = newCount;
+    document.getElementById('stat-today').textContent = todayCount;
+    document.getElementById('stat-updated').textContent = formatDate(data.last_updated);
+    document.getElementById('last-fetch').textContent = new Date().toLocaleTimeString();
+  }
+
+  // Load data.json
+  fetch('data.json')
+    .then(r => {
+      if (!r.ok) throw new Error('Not found');
+      return r.json();
+    })
+    .then(data => {
+      allDatasets = data.datasets || [];
+      updateStats(data);
+      renderTable();
+    })
+    .catch(() => {
+      // Show error and fall back to example data so the page still looks useful
+      document.getElementById('error-banner').style.display = 'block';
+      const fallback = {
+        last_updated: new Date().toISOString(),
+        datasets: [
+          { name: "Example Dataset",  path: "/data/example/dataset.csv",       updated: new Date().toISOString(),                          format: "CSV",     box_link: "https://company.box.com/s/example1" },
+          { name: "User Logs",        path: "/data/logs/users.parquet",         updated: new Date(Date.now() - 2*864e5).toISOString(),       format: "Parquet", box_link: "https://company.box.com/s/example2" },
+          { name: "Sales Q1 2026",    path: "/data/sales/q1_2026.xlsx",         updated: new Date(Date.now() - 5*864e5).toISOString(),       format: "XLSX",    box_link: "https://company.box.com/s/example3" },
+          { name: "Geo Reference",    path: "/data/reference/geo_lookup.json",  updated: new Date(Date.now() - 40*864e5).toISOString(),      format: "JSON",    box_link: null },
+        ]
+      };
+      allDatasets = fallback.datasets;
+      updateStats(fallback);
+      renderTable();
+    });
+</script>
+</body>
+</html>
