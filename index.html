@@ -7,16 +7,16 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0d0f12;
-      --surface: #141720;
-      --border: #222840;
-      --accent: #00e5ff;
-      --accent2: #7b61ff;
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --green: #00e676;
-      --yellow: #ffd740;
-      --red: #ff5252;
+      --bg: #f8f9fb;
+      --surface: #ffffff;
+      --border: #e2e6ef;
+      --accent: #0061d5;
+      --accent2: #5b3fde;
+      --text: #1a1f36;
+      --muted: #8792a8;
+      --green: #0da678;
+      --yellow: #d4820a;
+      --red: #d13f3f;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,25 +29,11 @@
       padding: 0;
     }
 
-    /* Scanline overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.08) 2px,
-        rgba(0,0,0,0.08) 4px
-      );
-      pointer-events: none;
-      z-index: 100;
-    }
+
 
     header {
       background: var(--surface);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--border);
       padding: 1.5rem 2.5rem;
       display: flex;
       align-items: center;
@@ -55,6 +41,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
     }
 
     .logo {
