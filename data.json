@@ -1,0 +1,7 @@
+{
+  "last_updated": "2026-02-24T10:00:00Z",
+  "datasets": [
+    { "name": "Sales Data", "path": "/data/sales/2026-02.csv", "updated": "2026-02-24", "format": "CSV" },
+    { "name": "User Logs",  "path": "/data/logs/users.parquet", "updated": "2026-02-23", "format": "Parquet" }
+  ]
+}
